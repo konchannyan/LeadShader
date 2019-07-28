@@ -14,7 +14,7 @@ Shader "JackyGun/LeadShader/chainMesh"
 		_DomainId("DomainId",Float) = 1.0
 		_ChainLen("ChainLen",Float) = 1.0
 		_MaxDis("MaxDis",Float) = 5.0
-		_CanDebug("CanDebug",Float) = 0.0
+		[Toggle(CAN_DEBUG)]_CanDebug("CanDebug",Float) = 0.0
 		_Color0("Color0", Color) = (0, 0, 0, 1)
 		_Color1("Color1", Color) = (1, 1, 1, 1)
 	}
@@ -33,6 +33,7 @@ Shader "JackyGun/LeadShader/chainMesh"
 #pragma geometry mainGS
 #pragma fragment mainFS
 #pragma multi_compile_instancing
+#pragma shader_feature CAN_DEBUG
 #define UNITY_INSTANCING_ENABLED//unity_InstancingIDを使えるようにする
 #include "UnityCG.cginc"
 
@@ -41,7 +42,6 @@ Shader "JackyGun/LeadShader/chainMesh"
 	float _DomainId;
 	float _ChainLen;
 	float _MaxDis;
-	float _CanDebug;
 	float4 _Color0;
 	float4 _Color1;
 
@@ -171,7 +171,8 @@ Shader "JackyGun/LeadShader/chainMesh"
 		int tid = input[0].targetID;
 
 		if (tid < 0) {
-			if (pid == 0 && _CanDebug > 0) {
+        #if CAN_DEBUG
+			if (pid == 0) {
 				o.state = tid;
 				o.color = 0;
 				o.vertex = UnityObjectToClipPos(float4(-0.01, -0.01, 0, 1));
@@ -189,6 +190,7 @@ Shader "JackyGun/LeadShader/chainMesh"
 				outStream.Append(o);
 				outStream.RestartStrip();
 			}
+#endif
 			return;
 		}
 
