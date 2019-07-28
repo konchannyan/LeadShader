@@ -33,7 +33,7 @@ Shader "JackyGun/LeadShader/chainMesh"
 #pragma geometry mainGS
 #pragma fragment mainFS
 #pragma multi_compile_instancing
-
+#define UNITY_INSTANCING_ENABLED//unity_InstancingIDを使えるようにする
 #include "UnityCG.cginc"
 
 	int _Tess;
@@ -100,10 +100,8 @@ Shader "JackyGun/LeadShader/chainMesh"
 		{
 			if (i == iid) continue;
 
-			dm.instanceID = i;
-			UNITY_SETUP_INSTANCE_ID(dm);
-			float sX = sqrt(pow(unity_ObjectToWorld[0].x, 2) + pow(unity_ObjectToWorld[0].y, 2) + pow(unity_ObjectToWorld[0].z, 2));
-
+            unity_InstanceID = i;
+            float sX = length(unity_ObjectToWorld[0].xyz);
 			if (distance(sX, _TargetId) < _DomainId) {
 				tid = i;
 				break;
@@ -196,12 +194,10 @@ Shader "JackyGun/LeadShader/chainMesh"
 
 		DS_OUT dm;
 
-		dm.instanceID = tid;
-		UNITY_SETUP_INSTANCE_ID(dm);
+        unity_InstanceID = tid;
 		float4 ppos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 
-		dm.instanceID = iid;
-		UNITY_SETUP_INSTANCE_ID(dm);
+        unity_InstanceID = iid;
 		float4 mpos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
 
 		if (distance(ppos, mpos) > _MaxDis)
