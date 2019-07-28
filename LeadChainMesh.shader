@@ -55,7 +55,6 @@ Shader "JackyGun/LeadShader/chainMesh"
 	struct VS_OUT
 	{
 		float4 pos    : POSITION;
-		uint instanceID : INSTANCE_ID;
 		int targetID : TARGET_ID;
 	};
 
@@ -67,17 +66,20 @@ Shader "JackyGun/LeadShader/chainMesh"
 
 	struct HS_OUT
 	{
-		uint instanceID : INSTANCE_ID;
 		int targetID : TARGET_ID;
 	};
 
 	struct DS_OUT
 	{
 		uint pid : PID;	// GeometryShaderに実行用の一意連続なIDを発行する
-		uint instanceID : INSTANCE_ID;
 		int targetID : TARGET_ID;
 	};
-
+    struct GS_IN
+    {
+        uint pid : PID; // GeometryShaderに実行用の一意連続なIDを発行する
+        uint instanceID : SV_InstanceID;
+        int targetID : TARGET_ID;
+    };
 	struct GS_OUT
 	{
 		int state : STATE;
@@ -110,14 +112,12 @@ Shader "JackyGun/LeadShader/chainMesh"
 
 		VS_OUT Out;
 		Out.pos = In.pos;
-		Out.instanceID = In.instanceID;
 		Out.targetID = tid;
 		
 		return Out;
 #else
 		VS_OUT Out;
 		Out.pos = In.pos;
-		Out.instanceID = In.instanceID;
 		Out.targetID = -2;
 		return Out;
 #endif
@@ -146,7 +146,6 @@ Shader "JackyGun/LeadShader/chainMesh"
 	HS_OUT mainHS(InputPatch<VS_OUT, 4> In, uint i : SV_OutputControlPointID)
 	{
 		HS_OUT Out;
-		Out.instanceID = In[0].instanceID;
 		Out.targetID = In[0].targetID;
 		return Out;
 	}
@@ -156,13 +155,12 @@ Shader "JackyGun/LeadShader/chainMesh"
 	{
 		DS_OUT Out;
 		Out.pid = (uint)(uv.x * _Tess) + ((uint)(uv.y * _Tess) * _Tess);
-		Out.instanceID = patch[0].instanceID;
 		Out.targetID = patch[0].targetID;
 		return Out;
 	}
 
 	[maxvertexcount(36)]
-	void mainGS(point DS_OUT input[1], inout TriangleStream<GS_OUT> outStream)
+	void mainGS(point GS_IN input[1], inout TriangleStream<GS_OUT> outStream)
 	{
 		GS_OUT o;
 
