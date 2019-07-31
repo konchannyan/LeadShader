@@ -157,7 +157,6 @@ Shader "JackyGun/LeadShader/chainMesh"
 		Out.targetID = patch[0].targetID;
 		return Out;
 	}
-
 	[maxvertexcount(36)]
 	void mainGS(point GS_IN input[1], inout TriangleStream<GS_OUT> outStream)
 	{
@@ -170,8 +169,11 @@ Shader "JackyGun/LeadShader/chainMesh"
 		if (tid < 0) {
         #if CAN_DEBUG
 			if (pid == 0) {
-				o.state = tid;
-				o.color = 0;
+                GS_OUT o;
+                o.color = 
+                // black : error
+	            // white : not hit
+                fixed4((tid + 2).rrr, 1);
 				o.vertex = UnityObjectToClipPos(float4(-0.01, -0.01, 0, 1));
 				outStream.Append(o);
 				o.vertex = UnityObjectToClipPos(float4(-0.01, +0.01, 0, 1));
@@ -288,12 +290,7 @@ Shader "JackyGun/LeadShader/chainMesh"
 		//o.color = pid % 2 ? _Color0 : _Color1;
     //float4 color;
     
-        fixed4 color = tid < 0 ?
-        // black : error
-	    // white : not hit
-        fixed4((tid + 2).rrr, 1) :
-        (pid & 1 ? _Color0 : _Color1);
-        
+        fixed4 color = pid & 1 ? _Color0 : _Color1;
         
         static const float3 cdir = 0.005;//これ暗黙的に何に変換されてる？<= float3(0.005,0.005,0.005)でした
 		//float4 wpos0 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, +cdir.z), 1));
