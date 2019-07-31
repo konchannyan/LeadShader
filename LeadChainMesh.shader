@@ -42,8 +42,8 @@ Shader "JackyGun/LeadShader/chainMesh"
 	float _DomainId;
 	float _ChainLen;
 	float _MaxDis;
-	float4 _Color0;
-	float4 _Color1;
+	fixed4 _Color0;
+	fixed4 _Color1;
 
 	// Structure
 	struct VS_IN
@@ -82,9 +82,8 @@ Shader "JackyGun/LeadShader/chainMesh"
     };
 	struct GS_OUT
 	{
-		int state : STATE;
 		float4 vertex : SV_POSITION;
-		float4 color : COLOR0;
+		fixed4 color : COLOR0;
 	};
 
 	// Main
@@ -162,7 +161,7 @@ Shader "JackyGun/LeadShader/chainMesh"
 	[maxvertexcount(36)]
 	void mainGS(point GS_IN input[1], inout TriangleStream<GS_OUT> outStream)
 	{
-		GS_OUT o;
+		
 
 		uint pid = input[0].pid;
 		uint iid = input[0].instanceID;
@@ -282,127 +281,113 @@ Shader "JackyGun/LeadShader/chainMesh"
 		fpos += dd * 0.25f;
 		//tpos -= dd * 0.25f;//notUsed
 
-        static const float3 cdir = 0.005;//これ暗黙的に何に変換されてる？<= float3(0.005,0.005,0.005)でした
-		float4 wpos0 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, +cdir.z), 1));
-		float4 wpos1 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, +cdir.y, +cdir.z), 1));
-		float4 wpos2 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, -cdir.z), 1));
-		float4 wpos3 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, +cdir.y, -cdir.z), 1));
-		float4 wpos4 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, -cdir.y, +cdir.z), 1));
-		float4 wpos5 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, -cdir.y, +cdir.z), 1));
-		float4 wpos6 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, -cdir.y, -cdir.z), 1));
-		float4 wpos7 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, -cdir.y, -cdir.z), 1));
-		
-		o.state = tid;
+
+    
+
+    //o.state = tid;
 		//o.color = pid % 2 ? _Color0 : _Color1;
-        o.color = pid & 1 ? _Color0 : _Color1;
+    //float4 color;
+    
+        fixed4 color = tid < 0 ?
+        // black : error
+	    // white : not hit
+        fixed4((tid + 2).rrr, 1) :
+        (pid & 1 ? _Color0 : _Color1);
+        
+        
+        static const float3 cdir = 0.005;//これ暗黙的に何に変換されてる？<= float3(0.005,0.005,0.005)でした
+		//float4 wpos0 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, +cdir.z), 1));
+		//float4 wpos1 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, +cdir.y, +cdir.z), 1));
+		//float4 wpos2 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, -cdir.z), 1));
+		//float4 wpos3 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, +cdir.y, -cdir.z), 1));
+		//float4 wpos4 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, -cdir.y, +cdir.z), 1));
+		//float4 wpos5 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, -cdir.y, +cdir.z), 1));
+		//float4 wpos6 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, -cdir.y, -cdir.z), 1));
+		//float4 wpos7 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, -cdir.y, -cdir.z), 1));
+        GS_OUT outs[8];
+        outs[0].color = color;
+        outs[1].color = color;
+        outs[2].color = color;
+        outs[3].color = color;
+        outs[4].color = color;
+        outs[5].color = color;
+        outs[6].color = color;
+        outs[7].color = color;
+        outs[0].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, +cdir.z), 1));    
+        outs[1].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, +cdir.y, +cdir.z), 1));  
+        outs[2].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, -cdir.z), 1));   
+        outs[3].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, +cdir.y, -cdir.z), 1));    
+        outs[4].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, -cdir.y, +cdir.z), 1));    
+        outs[5].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, -cdir.y, +cdir.z), 1));    
+        outs[6].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, -cdir.y, -cdir.z), 1));    
+        outs[7].vertex = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, -cdir.y, -cdir.z), 1));
 
-		o.vertex = wpos0;
-		outStream.Append(o);
-		o.vertex = wpos1;
-		outStream.Append(o);
-		o.vertex = wpos2;
-		outStream.Append(o);
-		outStream.RestartStrip();
 
-		o.vertex = wpos2;
-		outStream.Append(o);
-		o.vertex = wpos1;
-		outStream.Append(o);
-		o.vertex = wpos3;
-		outStream.Append(o);
-		outStream.RestartStrip();
+        outStream.Append(outs[0]);    
+        outStream.Append(outs[1]);    
+        outStream.Append(outs[2]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[2]);    
+        outStream.Append(outs[1]);    
+        outStream.Append(outs[3]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[4]);    
+        outStream.Append(outs[6]);    
+        outStream.Append(outs[5]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[6]);    
+        outStream.Append(outs[7]);    
+        outStream.Append(outs[5]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[0]);    
+        outStream.Append(outs[2]);
+        outStream.Append(outs[4]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[4]);    
+        outStream.Append(outs[2]);   
+        outStream.Append(outs[6]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[3]);   
+        outStream.Append(outs[1]);    
+        outStream.Append(outs[7]);
+        outStream.RestartStrip();
+  
+        outStream.Append(outs[7]);    
+        outStream.Append(outs[1]);    
+        outStream.Append(outs[5]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[1]);   
+        outStream.Append(outs[0]);   
+        outStream.Append(outs[5]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[5]);   
+        outStream.Append(outs[0]);   
+        outStream.Append(outs[4]);
+        outStream.RestartStrip();
+    
+        outStream.Append(outs[2]);   
+        outStream.Append(outs[3]);   
+        outStream.Append(outs[6]);
+        outStream.RestartStrip();
 
-		o.vertex = wpos4;
-		outStream.Append(o);
-		o.vertex = wpos6;
-		outStream.Append(o);
-		o.vertex = wpos5;
-		outStream.Append(o);
-		outStream.RestartStrip();
+        outStream.Append(outs[6]);
+        outStream.Append(outs[3]);
+        outStream.Append(outs[7]);
+        outStream.RestartStrip();
+    }
 
-		o.vertex = wpos6;
-		outStream.Append(o);
-		o.vertex = wpos7;
-		outStream.Append(o);
-		o.vertex = wpos5;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos0;
-		outStream.Append(o);
-		o.vertex = wpos2;
-		outStream.Append(o);
-		o.vertex = wpos4;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos4;
-		outStream.Append(o);
-		o.vertex = wpos2;
-		outStream.Append(o);
-		o.vertex = wpos6;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos3;
-		outStream.Append(o);
-		o.vertex = wpos1;
-		outStream.Append(o);
-		o.vertex = wpos7;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos7;
-		outStream.Append(o);
-		o.vertex = wpos1;
-		outStream.Append(o);
-		o.vertex = wpos5;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos1;
-		outStream.Append(o);
-		o.vertex = wpos0;
-		outStream.Append(o);
-		o.vertex = wpos5;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos5;
-		outStream.Append(o);
-		o.vertex = wpos0;
-		outStream.Append(o);
-		o.vertex = wpos4;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos2;
-		outStream.Append(o);
-		o.vertex = wpos3;
-		outStream.Append(o);
-		o.vertex = wpos6;
-		outStream.Append(o);
-		outStream.RestartStrip();
-
-		o.vertex = wpos6;
-		outStream.Append(o);
-		o.vertex = wpos3;
-		outStream.Append(o);
-		o.vertex = wpos7;
-		outStream.Append(o);
-		outStream.RestartStrip();
-}
-
-	float4 mainFS(GS_OUT i) : SV_Target
+	fixed4 mainFS(GS_OUT i) : SV_Target
 	{
-		if (i.state < 0){
-			// black : error
-			// white : not hit
-			return float4((i.state + 2).rrr, 1);
-		}
-
-		return i.color;
-	}
+        return i.color;
+    }
 		ENDCG
 	}
 	}
