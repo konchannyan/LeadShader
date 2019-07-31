@@ -195,28 +195,34 @@ Shader "JackyGun/LeadShader/chainMesh"
 		DS_OUT dm;
 
         unity_InstanceID = tid;
-		float4 ppos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
+		//float4 ppos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
+        float3 ppos = unity_ObjectToWorld._14_24_34;
 
         unity_InstanceID = iid;
-		float4 mpos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
+		//float4 mpos = mul(unity_ObjectToWorld, float4(0, 0, 0, 1));
+    float3 mpos = unity_ObjectToWorld._14_24_34;
 
+        
 		if (distance(ppos, mpos) > _MaxDis)
 			return;
 
-		float len = _ChainLen;
+		//float len = _ChainLen;
+        float lenPow2 = _ChainLen*_ChainLen;
 	//	float y0 = mpos.y;
 	//	float y1 = ppos.y;
 		float y0 = min(mpos.y, ppos.y);
 		float y1 = max(mpos.y, ppos.y);
 		float w = distance(mpos.xz, ppos.xz);
 		float b = y0 + y1;
-		float c = 0.25f * (b * b + w * w - len * len);
-		float d = b * b - 4 * 1 * c;
+		//float c = 0.25f * (b * b + w * w - len * len);
+    float cX4 = mad(b, b, mad(w, w, -lenPow2));
+		//float d = b * b - 4 * 1 * c;
+    float d = mad(b, b, -cX4);
 		float y = y0;
 	//	float y = min(y0, y1);
-		if (d >= 0) {
-			y = 0.25f * ( - b - sqrt(d));
-		}
+		//if (d >= 0) {
+        y = d >= 0 ? 0.25f * (-b - sqrt(d)) : y;
+    //}
 
 		//float h0 = (y0 - y);
 		//float h1 = (y1 - y);
@@ -224,26 +230,41 @@ Shader "JackyGun/LeadShader/chainMesh"
 		//float xa0 = -sqrt(h0);
 		//float xa1 = +sqrt(h1);
 
-		y = lerp(y1, y, 1);
+		//y = lerp(y1, y, 1);
 		float h = (y1 - y);
 		float w2 = w / 2;
+    //float t_size = (_Tess + 1) * _Tess + 1;
+    float t_sizeRCP = rcp(mad(_Tess + 1, _Tess, 1));
+		//float e0 = (input[0].pid + 0) / t_size;
+    float e0 = pid * t_sizeRCP;
+		//float e1 = (input[0].pid + 1) / t_size;
+    float e1 = e0 + t_sizeRCP;//e0がない場合でもmadで1OPで求まる
+
+
+    //float x0 = (e0 * 2 - 1) * (w / 2);
+    float x0 = mad(e0, w, -w2);
+    //float x1 = (e1 * 2 - 1) * (w / 2);
+
+    float x1 = mad(e0, w, -w2);
+
+    
+    
+    //ここまでw2=w/2
 		w2 = w2 * w2;
 		w2 = max(w2, 0.000001f);
 		float aa = h / w2;
 
-		float t_size = (_Tess + 1) * _Tess + 1;
-		float e0 = (pid + 0) / t_size;
-		float e1 = (pid + 1) / t_size;
+		
 
-		float x0 = e0 * 2 - 1;
-		float x1 = e1 * 2 - 1;
-		x0 *= w / 2;
-		x1 *= w / 2;
+		
+		
 		float ye0 = aa * x0 * x0 - h;
 		float ye1 = aa * x1 * x1 - h;
 
-		float3 fpos = lerp(mpos.xyz, ppos.xyz, e0) + float3(0, ye0, 0);
-		float3 tpos = lerp(mpos.xyz, ppos.xyz, e1) + float3(0, ye1, 0);
+    float3 fpos = lerp(mpos.xyz, ppos.xyz, e0);//+float3(0, ye0, 0);
+    fpos.y += ye0;
+    float3 tpos = lerp(mpos.xyz, ppos.xyz, e1); // + float3(0, ye1, 0);
+    tpos.y += ye1;
 
 		//float xi0 = lerp(xa0,xa1,e0);
 		//float xi1 = lerp(xa0,xa1,e1);
@@ -259,10 +280,9 @@ Shader "JackyGun/LeadShader/chainMesh"
 		float3 dd = tpos - fpos;
 
 		fpos += dd * 0.25f;
-		tpos -= dd * 0.25f;
+		//tpos -= dd * 0.25f;//notUsed
 
-		float3 cdir = 0.005;
-
+        static const float3 cdir = 0.005;//これ暗黙的に何に変換されてる？<= float3(0.005,0.005,0.005)でした
 		float4 wpos0 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, +cdir.z), 1));
 		float4 wpos1 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, +cdir.y, +cdir.z), 1));
 		float4 wpos2 = mul(UNITY_MATRIX_VP, float4(fpos + float3(-cdir.x, +cdir.y, -cdir.z), 1));
@@ -273,7 +293,8 @@ Shader "JackyGun/LeadShader/chainMesh"
 		float4 wpos7 = mul(UNITY_MATRIX_VP, float4(fpos + float3(+cdir.x, -cdir.y, -cdir.z), 1));
 		
 		o.state = tid;
-		o.color = pid % 2 ? _Color0 : _Color1;
+		//o.color = pid % 2 ? _Color0 : _Color1;
+        o.color = pid & 1 ? _Color0 : _Color1;
 
 		o.vertex = wpos0;
 		outStream.Append(o);
@@ -370,7 +391,7 @@ Shader "JackyGun/LeadShader/chainMesh"
 		o.vertex = wpos7;
 		outStream.Append(o);
 		outStream.RestartStrip();
-	}
+}
 
 	float4 mainFS(GS_OUT i) : SV_Target
 	{
