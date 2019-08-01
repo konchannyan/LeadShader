@@ -20,7 +20,6 @@ Shader "JackyGun/LeadShader/beacon"
 		CGPROGRAM
 #pragma target 5.0
 #pragma vertex mainVS
-#pragma geometry mainGS
 #pragma fragment mainFS
 #pragma multi_compile_instancing
 
@@ -33,30 +32,20 @@ Shader "JackyGun/LeadShader/beacon"
 
 	struct VS_OUT
 	{
-	};
-
-	struct GS_OUT
-	{
-		float4 vertex : SV_POSITION;
-	};
+    bool _ : TO_CREATE_CBUFFER;
+};
 
 	// Main
 	VS_OUT mainVS(VS_IN In)
 	{
-	}
+        VS_OUT o;
+        o._ = unity_ObjectToWorld;
+    return o;
+}
 
-	[maxvertexcount(1)]
-	void mainGS(point VS_OUT input[1], inout PointStream<GS_OUT> outStream)
-	{
-		GS_OUT o;
-		o.vertex = UnityObjectToClipPos(float4(0, 0, 0, 1));
-		outStream.Append(o);
-		outStream.RestartStrip();
-	}
 
-	float4 mainFS(GS_OUT i) : SV_Target
+	float4 mainFS(VS_OUT i) : SV_Target
 	{
-		discard;
 		return 0;
 	}
 		ENDCG
